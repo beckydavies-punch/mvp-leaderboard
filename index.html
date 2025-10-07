@@ -1,31 +1,4 @@
-html<!DOCTYPE html>
-<html>
-<head>
-    <title>MVP Club Leaderboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #4CAF50; color: white; }
-        tr:hover { background-color: #f5f5f5; }
-        .rank { font-weight: bold; font-size: 1.2em; }
-    </style>
-</head>
-<body>
-    <h1>MVP Club Leaderboard</h1>
-    <div id="lastUpdate"></div>
-    <table id="leaderboard">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>Points</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <script>
+<script>
         // Replace with your published Google Sheets CSV URL
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR060DHqBL62YiJzdXSeYNnlw32-VjWTunM4JzwMAuya82n_QNtFZavW875Bl7s8z3N3YmOLNosxL2e/pub?gid=0&single=true&output=csv';
 
@@ -44,17 +17,27 @@ html<!DOCTYPE html>
                     })
                     .sort((a, b) => b.points - a.points); // Sort by points descending
 
-                // Display data
+                // Display data with tied ranking
                 const tbody = document.querySelector('#leaderboard tbody');
                 tbody.innerHTML = '';
                 
+                let currentRank = 1;
+                let previousPoints = null;
+                
                 data.forEach((person, index) => {
+                    // If points are different from previous, update rank
+                    if (previousPoints !== null && person.points !== previousPoints) {
+                        currentRank = index + 1;
+                    }
+                    
                     const row = tbody.insertRow();
                     row.innerHTML = `
-                        <td class="rank">${index + 1}</td>
+                        <td class="rank">${currentRank}</td>
                         <td>${person.name}</td>
                         <td>${person.points}</td>
                     `;
+                    
+                    previousPoints = person.points;
                 });
 
                 // Update timestamp
@@ -71,5 +54,3 @@ html<!DOCTYPE html>
         // Refresh every 5 minutes
         setInterval(loadLeaderboard, 300000);
     </script>
-</body>
-</html>
