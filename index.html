@@ -1,83 +1,133 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <title>MVP Club Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
+            font-family: 'Poppins', sans-serif;
+            max-width: 900px; 
             margin: 50px auto; 
             padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 20px;
         }
         h1 {
             text-align: center;
             color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
         }
         #lastUpdate {
             text-align: center;
-            color: #666;
-            margin-bottom: 20px;
+            color: #888;
+            margin-bottom: 25px;
+            font-style: italic;
         }
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         th, td { 
-            padding: 12px; 
+            padding: 15px; 
             text-align: left; 
-            border-bottom: 1px solid #ddd; 
+            border-bottom: 1px solid #eee; 
         }
         th { 
-            background-color: #4CAF50; 
-            color: white; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
         }
         tr:hover { 
-            background-color: #f5f5f5; 
+            background-color: #f8f9ff; 
         }
         .rank { 
             font-weight: bold; 
+            font-size: 1.3em;
+            color: #667eea;
+            width: 80px;
+        }
+        .rank-1 { color: #FFD700; }
+        .rank-2 { color: #C0C0C0; }
+        .rank-3 { color: #CD7F32; }
+        .points {
+            font-weight: 600;
+            color: #764ba2;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
             font-size: 1.2em;
-            color: #4CAF50;
         }
     </style>
 </head>
 <body>
-    <h1>MVP Club Leaderboard</h1>
-    <div id="lastUpdate">Loading...</div>
-    <table id="leaderboard">
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Name</th>
-                <th>Points</th>
-            </tr>
-        </thead>
-        <tbody id="leaderboardBody">
-            <!-- Data will load here -->
-        </tbody>
-    </table>
+    <div class="container">
+        <div class="header">
+            <!-- Replace YOUR_LOGO_FILENAME with your actual logo file (e.g., logo.png) -->
+            <img src="https://www.punchb2b.com/" alt="Company Logo" class="logo">
+            <h1>🏆 MVP! Club Leaderboard</h1>
+        </div>
+        <div id="lastUpdate">Loading leaderboard data...</div>
+        <table id="leaderboard">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Name</th>
+                    <th>Total Points</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+                <tr><td colspan="3" class="loading">Loading data...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
     <script>
-        // Replace with your published Google Sheets CSV URL
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR060DHqBL62YiJzdXSeYNnlw32-VjWTunM4JzwMAuya82n_QNtFZavW875Bl7s8z3N3YmOLNosxL2e/pub?gid=0&single=true&output=csv';
+        // Replace with your published Google Sheets CSV URL from the Leaderboard tab
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR060DHqBL62YiJzdXSeYNnlw32-VjWTunM4JzwMAuya82n_QNtFZavW875Bl7s8z3N3YmOLNosxL2e/pub?gid=1913758145&single=true&output=csv';
 
         async function loadLeaderboard() {
             try {
                 const response = await fetch(SHEET_URL);
                 const csvText = await response.text();
                 
-                // Parse CSV
+                // Parse CSV (columns: Email, Name, Points)
                 const rows = csvText.split('\n').slice(1); // Skip header
                 const data = rows
                     .filter(row => row.trim())
                     .map(row => {
-                        const [name, points] = row.split(',');
-                        return { name: name.trim(), points: parseInt(points) };
+                        const parts = row.split(',');
+                        // Column A: Email (ignore)
+                        // Column B: Name
+                        const name = parts[1]?.trim();
+                        // Column C: Points
+                        const points = parseInt(parts[2]) || 0;
+                        return { name, points };
                     })
-                    .sort((a, b) => b.points - a.points); // Sort by points descending
+                    .filter(person => person.name && person.points > 0);
 
-                // Display data with tied ranking
+                // Display the leaderboard with tied rankings
                 const tbody = document.getElementById('leaderboardBody');
                 tbody.innerHTML = '';
                 
@@ -85,16 +135,31 @@
                 let previousPoints = null;
                 
                 data.forEach((person, index) => {
-                    // If points are different from previous, update rank
+                    // Handle tied rankings
                     if (previousPoints !== null && person.points !== previousPoints) {
                         currentRank = index + 1;
                     }
                     
                     const row = tbody.insertRow();
+                    
+                    // Add special class for top 3
+                    let rankClass = 'rank';
+                    let trophy = '';
+                    if (currentRank === 1) {
+                        rankClass += ' rank-1';
+                        trophy = '🥇 ';
+                    } else if (currentRank === 2) {
+                        rankClass += ' rank-2';
+                        trophy = '🥈 ';
+                    } else if (currentRank === 3) {
+                        rankClass += ' rank-3';
+                        trophy = '🥉 ';
+                    }
+                    
                     row.innerHTML = `
-                        <td class="rank">${currentRank}</td>
+                        <td class="${rankClass}">${trophy}${currentRank}</td>
                         <td>${person.name}</td>
-                        <td>${person.points}</td>
+                        <td class="points">${person.points}</td>
                     `;
                     
                     previousPoints = person.points;
@@ -103,14 +168,17 @@
                 // Update timestamp
                 document.getElementById('lastUpdate').textContent = 
                     `Last updated: ${new Date().toLocaleString()}`;
+                    
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
                 document.getElementById('lastUpdate').textContent = 
-                    'Error loading data. Please check console for details.';
+                    'Error loading data. Please refresh the page.';
+                document.getElementById('leaderboardBody').innerHTML = 
+                    '<tr><td colspan="3" style="text-align: center; color: red;">Failed to load leaderboard data</td></tr>';
             }
         }
 
-        // Load immediately
+        // Load immediately when page opens
         loadLeaderboard();
         
         // Refresh every 5 minutes
